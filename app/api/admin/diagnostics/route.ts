@@ -1,5 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Define a whitelist of allowed diagnostic commands
+const ALLOWED_COMMANDS = [
+  "ping",
+  "uptime",
+  "status"
+];
+
+function runDiagnosticCommand(command: string): string {
+  switch (command) {
+    case "ping":
+      return "pong";
+    case "uptime":
+      return `${process.uptime()}s`;
+    case "status":
+      return "OK";
+    default:
+      throw new Error("Invalid command");
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { command } = await request.json();
@@ -11,7 +31,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = eval(command);
+    if (!ALLOWED_COMMANDS.includes(command)) {
+      return NextResponse.json(
+        { error: "Invalid command" },
+        { status: 400 }
+      );
+    }
+
+    const result = runDiagnosticCommand(command);
 
     return NextResponse.json({
       command: command,
