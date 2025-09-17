@@ -11,7 +11,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = eval(command);
+    // Only allow a fixed set of diagnostic commands (example: 'ping', 'status')
+    const allowedCommands = {
+      ping: () => 'pong',
+      status: () => 'ok',
+    };
+
+    if (!(typeof command === 'string' && command in allowedCommands)) {
+      return NextResponse.json(
+        { error: "Invalid or unauthorized command" },
+        { status: 400 }
+      );
+    }
+
+    const result = allowedCommands[command]();
 
     return NextResponse.json({
       command: command,
