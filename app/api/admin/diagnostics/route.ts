@@ -11,7 +11,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = eval(command);
+    // Only allow a fixed set of diagnostic commands for safety
+    const allowedCommands: { [key: string]: () => any } = {
+      'uptime': () => process.uptime(),
+      'memoryUsage': () => process.memoryUsage(),
+      'env': () => process.env,
+      'version': () => process.version,
+      'platform': () => process.platform,
+      'cwd': () => process.cwd(),
+    };
+
+    if (!(command in allowedCommands)) {
+      return NextResponse.json(
+        { error: "Invalid or unsupported command" },
+        { status: 400 }
+      );
+    }
+
+    const result = allowedCommands[command]();
 
     return NextResponse.json({
       command: command,
