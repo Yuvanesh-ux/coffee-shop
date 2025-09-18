@@ -11,13 +11,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = eval(command);
-
+    // Remove unsafe eval usage
+    // Instead, respond with an error indicating that command execution is disabled
     return NextResponse.json({
-      command: command,
-      result: result,
+      error: "Execution of arbitrary commands is disabled for security reasons.",
       timestamp: new Date().toISOString(),
-    });
+    }, { status: 403 });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
