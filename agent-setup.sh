@@ -11,9 +11,13 @@ npm install
 
 # Step 2: Create environment file
 echo "⚙️  Creating environment configuration..."
+if [ -z "$JWT_SECRET" ]; then
+  echo "❌ JWT_SECRET environment variable is not set. Please set it before running this script."
+  exit 1
+fi
 cat > .env.local << EOF
 DATABASE_URL=postgresql://admin:password@localhost:5432/coffee_shop
-JWT_SECRET=coffee-shop-secret-key-2024
+JWT_SECRET=$JWT_SECRET
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 EOF
 
@@ -25,7 +29,7 @@ docker compose up -d
 echo "⏳ Waiting for database to initialize (10 seconds)..."
 sleep 10
 
-# Step 5: Verify database
+# Step 5: Verify database setup
 echo "✅ Verifying database setup..."
 docker exec coffee-shop-db psql -U admin -d coffee_shop -c "SELECT COUNT(*) FROM users;" > /dev/null 2>&1
 if [ $? -eq 0 ]; then
