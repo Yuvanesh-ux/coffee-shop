@@ -29,6 +29,7 @@ export default function Home() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showLogin, setShowLogin] = useState(true);
   const [showAuthForm, setShowAuthForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -101,7 +102,7 @@ export default function Home() {
       if (response.ok) {
         setCart([]);
         alert("Order placed successfully!");
-        fetchProducts(); // Refresh products to update stock
+        fetchProducts();
       } else {
         const data = await response.json();
         alert(data.error || "Checkout failed");
@@ -173,6 +174,10 @@ export default function Home() {
     );
   }
 
+  const filteredProducts = products.filter((product) => 
+    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
@@ -200,8 +205,17 @@ export default function Home() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full max-w-md px-4 py-2 border rounded-lg"
+          />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {products.map((product) => (
+          {filteredProducts.map((product) => (
             <ProductCard
               key={product.id}
               product={product}
