@@ -8,6 +8,16 @@ export interface User {
   role: string;
 }
 
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error(
+      "JWT_SECRET environment variable is not set. Refusing to use a fallback secret."
+    );
+  }
+  return secret;
+}
+
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10);
 }
@@ -22,17 +32,27 @@ export async function verifyPassword(
 export function generateToken(user: User): string {
   return jwt.sign(
     { id: user.id, email: user.email, role: user.role },
-    process.env.JWT_SECRET || "fallback-secret",
+    getJwtSecret(),
     { expiresIn: "24h" }
   );
 }
 
-export function verifyToken(token: string): User | null {
+export async function verifyToken(token: string): Promise<User | null> {
   try {
-    return jwt.verify(
-      token,
-      process.env.JWT_SECRET || "fallback-secret"
-    ) as User;
+    const decoded = jwt.verify(token, getJwtSecret()) as User;
+
+    // Validate that the user actually exists in the database
+    const result = await query(
+      "SELECT id, email, role FROM users WHERE id = $1",
+      [decoded.id]
+    );
+    const dbUser = result?.rows[0];
+    if (!dbUser) {
+      return null;
+    }
+
+    // Return the database user data (authoritative source) rather than token claims
+    return { id: dbUser.id, email: dbUser.email, role: dbUser.role };
   } catch {
     return null;
   }
