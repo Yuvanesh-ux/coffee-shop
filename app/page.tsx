@@ -6,6 +6,7 @@ import { useAuth } from "./components/AuthContext";
 import AuthForm from "./components/AuthForm";
 import ProductCard from "./components/ProductCard";
 import Cart from "./components/Cart";
+import FeaturePreview from "./components/FeaturePreview";
 
 interface Product {
   id: number;
@@ -200,6 +201,8 @@ export default function Home() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        <FeaturePreview userEmail={user.email} productCount={products.length} />
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {products.map((product) => (
             <ProductCard
