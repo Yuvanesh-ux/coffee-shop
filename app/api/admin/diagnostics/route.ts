@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/middleware";
 
 export async function POST(request: NextRequest) {
   try {
-    requireAdmin(request);
+    await requireAdmin(request);
 
     const { command } = await request.json();
 
