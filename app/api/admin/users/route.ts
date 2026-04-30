@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/middleware";
 
 export async function GET(request: NextRequest) {
   try {
-    requireAdmin(request);
+    await requireAdmin(request);
 
     // Get all users with order count
     const result = await query(`
