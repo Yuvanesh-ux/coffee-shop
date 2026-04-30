@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { query } from "./db";
 
@@ -7,6 +8,14 @@ export interface User {
   email: string;
   role: string;
 }
+
+// Use a cryptographically random ephemeral secret if JWT_SECRET is not configured
+// or is too short. This ensures that even if the env var is missing, tokens cannot
+// be forged with a known secret. Note: tokens will be invalidated on restart when
+// using the ephemeral secret.
+const JWT_SECRET_VALUE: string = process.env.JWT_SECRET && process.env.JWT_SECRET.length >= 32
+  ? process.env.JWT_SECRET
+  : crypto.randomBytes(64).toString("hex");
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10);
@@ -22,17 +31,34 @@ export async function verifyPassword(
 export function generateToken(user: User): string {
   return jwt.sign(
     { id: user.id, email: user.email, role: user.role },
-    process.env.JWT_SECRET || "fallback-secret",
+    JWT_SECRET_VALUE,
     { expiresIn: "24h" }
   );
 }
 
-export function verifyToken(token: string): User | null {
+export async function verifyToken(token: string): Promise<User | null> {
   try {
-    return jwt.verify(
-      token,
-      process.env.JWT_SECRET || "fallback-secret"
-    ) as User;
+    const decoded = jwt.verify(token, JWT_SECRET_VALUE) as {
+      id: number;
+      email: string;
+      role: string;
+    };
+
+    // Validate that the user actually exists in the database
+    // and that their role matches the token claims
+    const result = await query(
+      "SELECT id, email, role FROM users WHERE id = $1",
+      [decoded.id]
+    );
+    const dbUser = result.rows[0];
+
+    if (!dbUser) {
+      return null;
+    }
+
+    // Return the database user data, not the token claims
+    // This prevents privilege escalation via forged role claims
+    return { id: dbUser.id, email: dbUser.email, role: dbUser.role };
   } catch {
     return null;
   }

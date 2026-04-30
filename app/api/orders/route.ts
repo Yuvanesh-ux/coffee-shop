@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/middleware";
 
 export async function GET(request: NextRequest) {
   try {
-    const user = requireAuth(request);
+    const user = await requireAuth(request);
 
     let ordersQuery = `
       SELECT o.*, 
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = requireAuth(request);
+    const user = await requireAuth(request);
     const { items } = await request.json();
 
     if (!items || items.length === 0) {
