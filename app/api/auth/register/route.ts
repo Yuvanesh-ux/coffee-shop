@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { hashPassword, generateToken } from "@/lib/auth";
+import { getUserByEmail, hashPassword, generateToken, normalizeEmail } from "@/lib/auth";
 import { query } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
@@ -14,11 +14,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already exists
-    const existingUser = await query("SELECT id FROM users WHERE email = $1", [
-      email,
-    ]);
-    if (existingUser.rows.length > 0) {
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail) {
+      return NextResponse.json(
+        { error: "Email and password required" },
+        { status: 400 }
+      );
+    }
+
+    // Check if user already exists (case- and whitespace-insensitive)
+    const existingUser = await getUserByEmail(normalizedEmail);
+    if (existingUser) {
       return NextResponse.json(
         { error: "User already exists" },
         { status: 409 }
@@ -29,7 +35,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await hashPassword(password);
     const result = await query(
       "INSERT INTO users (email, password, role) VALUES ($1, $2, $3) RETURNING id, email, role",
-      [email, hashedPassword, "user"]
+      [normalizedEmail, hashedPassword, "user"]
     );
 
     const user = result.rows[0];
