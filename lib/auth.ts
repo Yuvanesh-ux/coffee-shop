@@ -19,20 +19,25 @@ export async function verifyPassword(
   return bcrypt.compare(password, hash);
 }
 
+function jwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET is required");
+  }
+  return secret;
+}
+
 export function generateToken(user: User): string {
   return jwt.sign(
     { id: user.id, email: user.email, role: user.role },
-    process.env.JWT_SECRET || "fallback-secret",
+    jwtSecret(),
     { expiresIn: "24h" }
   );
 }
 
 export function verifyToken(token: string): User | null {
   try {
-    return jwt.verify(
-      token,
-      process.env.JWT_SECRET || "fallback-secret"
-    ) as User;
+    return jwt.verify(token, jwtSecret()) as User;
   } catch {
     return null;
   }
